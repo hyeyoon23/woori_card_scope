@@ -113,6 +113,8 @@ services:
     volumes:
       - mysql1_data:/var/lib/mysql
       - ./docker/mysql/innodb/mysql1/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    ports:
+      - "33061:3306"
     networks:
       - app-net
     restart: unless-stopped
@@ -154,17 +156,6 @@ services:
     restart: unless-stopped
 
   # ─────────────────────────────────────────────────────────────
-  # MySQL Shell (Cluster Admin)
-  # ─────────────────────────────────────────────────────────────
-  mysql-shell:
-    image: mysql/mysql-shell:8.0
-    container_name: ${COMPOSE_PROJECT_NAME}-mysql-shell
-    entrypoint: ["sleep", "infinity"]
-    networks:
-      - app-net
-    restart: unless-stopped
-
-  # ─────────────────────────────────────────────────────────────
   # MySQL Router (RW/RO endpoints)
   #  - RW : 6446 (Primary)
   #  - RO : 6447 (Secondaries)
@@ -172,7 +163,7 @@ services:
   mysql-router:
     image: mysql/mysql-router:8.0
     container_name: ${COMPOSE_PROJECT_NAME}-mysql-router
-    entrypoint: ["sleep", "infinity"]  # bootstrap 후 실행으로 변경/exec
+    entrypoint: ["sleep", "infinity"]
     volumes:
       - mysqlrouter_data:/router
     ports:
