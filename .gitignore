@@ -1,1 +1,16 @@
-/.metadata/
+# Eclipse 설정 파일 (개인 환경마다 다름 → 제외)
+.classpath
+.project
+.settings/
+
+# 빌드 결과물
+/bin/
+/build/
+*.class
+
+# Maven (사용 시)
+/target/
+
+# OS 파일
+.DS_Store
+Thumbs.db
