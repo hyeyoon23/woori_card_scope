@@ -6,48 +6,56 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 import javax.sql.DataSource;
 
-import com.zaxxer.hikari.HikariConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.zaxxer.hikari.HikariDataSource;
 
 @WebListener
 public class ApplicationContextListener implements ServletContextListener {
 
-    private HikariDataSource ds;
+    private static final Logger log = LoggerFactory.getLogger(ApplicationContextListener.class);
+
+    private HikariDataSource writeDs;
+    private HikariDataSource readDs;
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         ServletContext ctx = sce.getServletContext();
-        
-        try {
-			Class.forName("com.mysql.cj.jdbc.Driver");
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
 
-        HikariConfig config = new HikariConfig();
-        // 필수 설정값(별도의 설정파일로 분리 가능, ex. jdbc.properties)
-        config.setJdbcUrl("jdbc:mysql://localhost:3306/card_db?serverTimezone=Asia/Seoul");
-        config.setUsername("root");
-        config.setPassword("1234");
+        writeDs = HikariDataSourceFactory.createWriteDataSource();
+        readDs = HikariDataSourceFactory.createReadDataSource();
 
-        // 선택 설정값 예시
-//        config.setMaximumPoolSize(10);
-//        config.setMinimumIdle(2);
-//        config.setConnectionTimeout(3000);
-//        config.setIdleTimeout(600000);
-//        config.setMaxLifetime(1800000);
+        // Backward compatibility: existing code keeps using DATA_SOURCE (write)
+        ctx.setAttribute("DATA_SOURCE", writeDs);
+        ctx.setAttribute("WRITE_DATA_SOURCE", writeDs);
+        ctx.setAttribute("READ_DATA_SOURCE", readDs);
 
-        ds = new HikariDataSource(config);
-
-        ctx.setAttribute("DATA_SOURCE", ds);
+        log.info("HikariCP pools initialized — write: {}, read: {}",
+                writeDs.getJdbcUrl(), readDs.getJdbcUrl());
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
-        if (ds != null) ds.close(); // 애플리케이션 종료 시 커넥션 풀 자원해제
+        if (readDs != null) {
+            readDs.close();
+            log.info("Read pool closed");
+        }
+        if (writeDs != null) {
+            writeDs.close();
+            log.info("Write pool closed");
+        }
     }
 
     public static DataSource getDataSource(ServletContext ctx) {
         return (DataSource) ctx.getAttribute("DATA_SOURCE");
+    }
+
+    public static DataSource getWriteDataSource(ServletContext ctx) {
+        return (DataSource) ctx.getAttribute("WRITE_DATA_SOURCE");
+    }
+
+    public static DataSource getReadDataSource(ServletContext ctx) {
+        return (DataSource) ctx.getAttribute("READ_DATA_SOURCE");
     }
 }
