@@ -156,6 +156,22 @@ services:
     restart: unless-stopped
 
   # ─────────────────────────────────────────────────────────────
+  # MySQL Shell (Cluster 구성용)
+  # ─────────────────────────────────────────────────────────────
+  mysqlsh:
+    image: mysql/mysql-server:8.0
+    container_name: ${COMPOSE_PROJECT_NAME}-mysqlsh
+    entrypoint: ["sleep", "infinity"]
+    depends_on:
+      - mysql1
+      - mysql2
+      - mysql3
+      - mysql4
+    networks:
+      - app-net
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────────
   # MySQL Router (RW/RO endpoints)
   #  - RW : 6446 (Primary)
   #  - RO : 6447 (Secondaries)
