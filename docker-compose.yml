@@ -1,5 +1,4 @@
 services:
-
   # ─────────────────────────────────────────
   # Nginx
   # ─────────────────────────────────────────
@@ -17,7 +16,6 @@ services:
       - app-net
     restart: unless-stopped
 
-
   # ─────────────────────────────────────────
   # WAS 1
   # ─────────────────────────────────────────
@@ -30,24 +28,21 @@ services:
       - "8080:8080"
     environment:
       DB_NAME: ${APP_DB_NAME}
-
       DB_SOURCE_HOST: mysql-router
       DB_SOURCE_PORT: 6446
       DB_SOURCE_USER: ${APP_DB_USER}
       DB_SOURCE_PASSWORD: ${APP_DB_PASSWORD}
-
       DB_REPLICA_HOST: mysql-router
       DB_REPLICA_PORT: 6447
       DB_REPLICA_USER: ${APP_DB_RO_USER}
       DB_REPLICA_PASSWORD: ${APP_DB_RO_PASSWORD}
-
       DB_PARAMS: serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
     depends_on:
-      - mysql-router
+      mysql-router:
+        condition: service_healthy
     networks:
       - app-net
     restart: unless-stopped
-
 
   # ─────────────────────────────────────────
   # WAS 2
@@ -61,27 +56,24 @@ services:
       - "8090:8080"
     environment:
       DB_NAME: ${APP_DB_NAME}
-
       DB_SOURCE_HOST: mysql-router
       DB_SOURCE_PORT: 6446
       DB_SOURCE_USER: ${APP_DB_USER}
       DB_SOURCE_PASSWORD: ${APP_DB_PASSWORD}
-
       DB_REPLICA_HOST: mysql-router
       DB_REPLICA_PORT: 6447
       DB_REPLICA_USER: ${APP_DB_RO_USER}
       DB_REPLICA_PASSWORD: ${APP_DB_RO_PASSWORD}
-
       DB_PARAMS: serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
     depends_on:
-      - mysql-router
+      mysql-router:
+        condition: service_healthy
     networks:
       - app-net
     restart: unless-stopped
 
-
   # ─────────────────────────────────────────
-  # MySQL Node 1 (bootstrap_group=ON)
+  # MySQL Node 1
   # ─────────────────────────────────────────
   mysql1:
     image: mysql:8.0
@@ -99,7 +91,6 @@ services:
       - app-net
     restart: unless-stopped
 
-
   mysql2:
     image: mysql:8.0
     container_name: ${COMPOSE_PROJECT_NAME}-mysql2
@@ -115,7 +106,6 @@ services:
     networks:
       - app-net
     restart: unless-stopped
-
 
   mysql3:
     image: mysql:8.0
@@ -133,7 +123,6 @@ services:
       - app-net
     restart: unless-stopped
 
-
   mysql4:
     image: mysql:8.0
     container_name: ${COMPOSE_PROJECT_NAME}-mysql4
@@ -150,14 +139,24 @@ services:
       - app-net
     restart: unless-stopped
 
-
   # ─────────────────────────────────────────
-  # MySQL Shell (Cluster 구성용)
+  # MySQL Shell
   # ─────────────────────────────────────────
   mysqlsh:
     image: mysql/mysql-server:8.0
     container_name: ${COMPOSE_PROJECT_NAME}-mysqlsh
-    entrypoint: ["sleep", "infinity"]
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        echo "[mysqlsh] Waiting for mysql1 to be ready..."
+        until mysqlsh root:1234@mysql1:3306 -e "print('ok')" 2>/dev/null; do
+          sleep 5
+        done
+        echo "[mysqlsh] Attempting cluster recovery..."
+        mysqlsh root:1234@mysql1:3306 -e "dba.rebootClusterFromCompleteOutage()" 2>/dev/null || true
+        echo "[mysqlsh] Done. Sleeping..."
+        sleep infinity
     depends_on:
       - mysql1
       - mysql2
@@ -167,11 +166,8 @@ services:
       - app-net
     restart: unless-stopped
 
-
   # ─────────────────────────────────────────
   # MySQL Router
-  #   - 설정 파일 없으면 대기 (최초 부트스트랩 전)
-  #   - 설정 파일 있으면 자동 시작
   # ─────────────────────────────────────────
   mysql-router:
     image: mysql/mysql-router:8.0
@@ -186,7 +182,7 @@ services:
           echo "[router] Config not found. Waiting for bootstrap..."
           while [ ! -f "$$CONF" ]; do sleep 5; done
         fi
-        echo "[router] Config found. Starting mysqlrouter..."
+        echo "[router] Starting mysqlrouter..."
         exec mysqlrouter -c "$$CONF"
     volumes:
       - mysqlrouter_data:/router
@@ -198,12 +194,15 @@ services:
     networks:
       - app-net
     restart: unless-stopped
-
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/6446'"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
 networks:
   app-net:
     driver: bridge
-
 
 volumes:
   mysql1_data:
