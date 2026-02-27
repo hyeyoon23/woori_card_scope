@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
 
   # ─────────────────────────────────────────
@@ -33,13 +31,11 @@ services:
     environment:
       DB_NAME: ${APP_DB_NAME}
 
-      # Router RW
       DB_SOURCE_HOST: mysql-router
       DB_SOURCE_PORT: 6446
       DB_SOURCE_USER: ${APP_DB_USER}
       DB_SOURCE_PASSWORD: ${APP_DB_PASSWORD}
 
-      # Router RO
       DB_REPLICA_HOST: mysql-router
       DB_REPLICA_PORT: 6447
       DB_REPLICA_USER: ${APP_DB_RO_USER}
@@ -85,7 +81,7 @@ services:
 
 
   # ─────────────────────────────────────────
-  # MySQL Node 1
+  # MySQL Node 1 (bootstrap_group=ON)
   # ─────────────────────────────────────────
   mysql1:
     image: mysql:8.0
@@ -95,9 +91,10 @@ services:
     volumes:
       - mysql1_data:/var/lib/mysql
       - ./docker/mysql/innodb/mysql1/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     expose:
       - "3306"
-      - "33061"     # Group Replication GCS
+      - "33061"
     networks:
       - app-net
     restart: unless-stopped
@@ -111,6 +108,7 @@ services:
     volumes:
       - mysql2_data:/var/lib/mysql
       - ./docker/mysql/innodb/mysql2/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     expose:
       - "3306"
       - "33061"
@@ -127,6 +125,7 @@ services:
     volumes:
       - mysql3_data:/var/lib/mysql
       - ./docker/mysql/innodb/mysql3/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     expose:
       - "3306"
       - "33061"
@@ -143,6 +142,7 @@ services:
     volumes:
       - mysql4_data:/var/lib/mysql
       - ./docker/mysql/innodb/mysql4/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     expose:
       - "3306"
       - "33061"
@@ -152,7 +152,7 @@ services:
 
 
   # ─────────────────────────────────────────
-  # MySQL Shell
+  # MySQL Shell (Cluster 구성용)
   # ─────────────────────────────────────────
   mysqlsh:
     image: mysql/mysql-server:8.0
@@ -170,10 +170,24 @@ services:
 
   # ─────────────────────────────────────────
   # MySQL Router
+  #   - 설정 파일 없으면 대기 (최초 부트스트랩 전)
+  #   - 설정 파일 있으면 자동 시작
   # ─────────────────────────────────────────
   mysql-router:
     image: mysql/mysql-router:8.0
     container_name: ${COMPOSE_PROJECT_NAME}-mysql-router
+    user: "0:0"
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        CONF=/router/mysqlrouter.conf
+        if [ ! -f "$$CONF" ]; then
+          echo "[router] Config not found. Waiting for bootstrap..."
+          while [ ! -f "$$CONF" ]; do sleep 5; done
+        fi
+        echo "[router] Config found. Starting mysqlrouter..."
+        exec mysqlrouter -c "$$CONF"
     volumes:
       - mysqlrouter_data:/router
     ports:
@@ -184,9 +198,6 @@ services:
     networks:
       - app-net
     restart: unless-stopped
-
-    entrypoint: ["mysqlrouter"]
-    command: ["-c", "/router/mysqlrouter.conf"]
 
 
 networks:
