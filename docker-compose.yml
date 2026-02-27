@@ -6,7 +6,7 @@ services:
         image: nginx:1.27-alpine
         container_name: ${COMPOSE_PROJECT_NAME}-nginx
         ports:
-            - "80:80"
+            - "80-81:80"
         depends_on:
             - was1
             - was2
@@ -90,6 +90,11 @@ services:
         networks:
             - app-net
         restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+            interval: 5s
+            timeout: 3s
+            retries: 20
 
     mysql2:
         image: mysql:8.0
@@ -106,6 +111,11 @@ services:
         networks:
             - app-net
         restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+            interval: 5s
+            timeout: 3s
+            retries: 20
 
     mysql3:
         image: mysql:8.0
@@ -122,6 +132,11 @@ services:
         networks:
             - app-net
         restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+            interval: 5s
+            timeout: 3s
+            retries: 20
 
     mysql4:
         image: mysql:8.0
@@ -138,6 +153,11 @@ services:
         networks:
             - app-net
         restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+            interval: 5s
+            timeout: 3s
+            retries: 20
 
     # ─────────────────────────────────────────
     # MySQL Shell (Cluster 자동 복구 + 수동 접속용)
@@ -150,18 +170,22 @@ services:
             - -c
             - |
                 echo "[mysqlsh] Waiting for mysql1 to be ready..."
-                until mysqlsh root:1234@mysql1:3306 -e "print('ok')" 2>/dev/null; do
+                until mysqlsh root:${MYSQL_ROOT_PASSWORD}@mysql1:3306 -e "print('ok')" 2>/dev/null; do
                   sleep 5
                 done
                 echo "[mysqlsh] Attempting cluster recovery..."
-                mysqlsh root:1234@mysql1:3306 -e "dba.rebootClusterFromCompleteOutage()" 2>/dev/null || true
+                mysqlsh root:${MYSQL_ROOT_PASSWORD}@mysql1:3306 -e "dba.rebootClusterFromCompleteOutage()" 2>/dev/null || true
                 echo "[mysqlsh] Done. Sleeping..."
                 sleep infinity
         depends_on:
-            - mysql1
-            - mysql2
-            - mysql3
-            - mysql4
+            mysql1:
+                condition: service_healthy
+            mysql2:
+                condition: service_healthy
+            mysql3:
+                condition: service_healthy
+            mysql4:
+                condition: service_healthy
         networks:
             - app-net
         restart: unless-stopped
@@ -190,7 +214,14 @@ services:
             - "6446:6446"
             - "6447:6447"
         depends_on:
-            - mysql1
+            mysql1:
+                condition: service_healthy
+            mysql2:
+                condition: service_healthy
+            mysql3:
+                condition: service_healthy
+            mysql4:
+                condition: service_healthy
         networks:
             - app-net
         restart: unless-stopped
