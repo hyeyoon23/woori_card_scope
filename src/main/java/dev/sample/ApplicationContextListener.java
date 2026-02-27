@@ -14,48 +14,47 @@ import com.zaxxer.hikari.HikariDataSource;
 @WebListener
 public class ApplicationContextListener implements ServletContextListener {
 
-    private static final Logger log = LoggerFactory.getLogger(ApplicationContextListener.class);
+	private static final Logger log = LoggerFactory.getLogger(ApplicationContextListener.class);
 
-    private HikariDataSource writeDs;
-    private HikariDataSource readDs;
+	private HikariDataSource writeDs;
+	private HikariDataSource readDs;
 
-    @Override
-    public void contextInitialized(ServletContextEvent sce) {
-        ServletContext ctx = sce.getServletContext();
+	@Override
+	public void contextInitialized(ServletContextEvent sce) {
+		ServletContext ctx = sce.getServletContext();
 
-        writeDs = HikariDataSourceFactory.createWriteDataSource();
-        readDs = HikariDataSourceFactory.createReadDataSource();
+		writeDs = HikariDataSourceFactory.createWriteDataSource();
+		readDs = HikariDataSourceFactory.createReadDataSource();
 
-        // Backward compatibility: existing code keeps using DATA_SOURCE (write)
-        ctx.setAttribute("DATA_SOURCE", writeDs);
-        ctx.setAttribute("WRITE_DATA_SOURCE", writeDs);
-        ctx.setAttribute("READ_DATA_SOURCE", readDs);
+		// Backward compatibility: existing code keeps using DATA_SOURCE (write)
+		ctx.setAttribute("DATA_SOURCE", writeDs);
+		ctx.setAttribute("WRITE_DATA_SOURCE", writeDs);
+		ctx.setAttribute("READ_DATA_SOURCE", readDs);
 
-        log.info("HikariCP pools initialized — write: {}, read: {}",
-                writeDs.getJdbcUrl(), readDs.getJdbcUrl());
-    }
+		log.info("HikariCP pools initialized — write: {}, read: {}", writeDs.getJdbcUrl(), readDs.getJdbcUrl());
+	}
 
-    @Override
-    public void contextDestroyed(ServletContextEvent sce) {
-        if (readDs != null) {
-            readDs.close();
-            log.info("Read pool closed");
-        }
-        if (writeDs != null) {
-            writeDs.close();
-            log.info("Write pool closed");
-        }
-    }
+	@Override
+	public void contextDestroyed(ServletContextEvent sce) {
+		if (readDs != null) {
+			readDs.close();
+			log.info("Read pool closed");
+		}
+		if (writeDs != null) {
+			writeDs.close();
+			log.info("Write pool closed");
+		}
+	}
 
-    public static DataSource getDataSource(ServletContext ctx) {
-        return (DataSource) ctx.getAttribute("DATA_SOURCE");
-    }
+	public static DataSource getDataSource(ServletContext ctx) {
+		return (DataSource) ctx.getAttribute("DATA_SOURCE");
+	}
 
-    public static DataSource getWriteDataSource(ServletContext ctx) {
-        return (DataSource) ctx.getAttribute("WRITE_DATA_SOURCE");
-    }
+	public static DataSource getWriteDataSource(ServletContext ctx) {
+		return (DataSource) ctx.getAttribute("WRITE_DATA_SOURCE");
+	}
 
-    public static DataSource getReadDataSource(ServletContext ctx) {
-        return (DataSource) ctx.getAttribute("READ_DATA_SOURCE");
-    }
+	public static DataSource getReadDataSource(ServletContext ctx) {
+		return (DataSource) ctx.getAttribute("READ_DATA_SOURCE");
+	}
 }
