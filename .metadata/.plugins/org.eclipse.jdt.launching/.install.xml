@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<dirs>
+    <entry loc="/Library/Java/JavaVirtualMachines/jdk-1.8.jdk/Contents/Home" stamp="1758873747000"/>
+    <entry loc="/Users/sjy/Library/Java/JavaVirtualMachines/azul-1.8.0_472/Contents/Home" stamp="1763006238976"/>
+    <entry loc="/Library/Java/JavaVirtualMachines/jdk-22.jdk/Contents/Home" stamp="1713336315014"/>
+    <entry loc="/Library/Java/JavaVirtualMachines/amazon-corretto-11.jdk/Contents/Home" stamp="1712775154000"/>
+    <entry loc="/Users/sjy/Library/Java/JavaVirtualMachines/openjdk-22.0.1/Contents/Home" stamp="1713335504698"/>
+    <entry loc="/Users/sjy/Library/Java/JavaVirtualMachines/graalvm-jdk-21.0.7/Contents/Home" stamp="1747553961836"/>
+    <entry loc="/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home" stamp="1761087939000"/>
+    <entry loc="/Library/Java/JavaVirtualMachines/zulu-8.jdk/Contents/Home" stamp="1759594304000"/>
+    <entry loc="/Users/sjy/Library/Java/JavaVirtualMachines/graalvm-jdk-17.0.12/Contents/Home" stamp="1758202380347"/>
+    <entry loc="/Users/sjy/Library/Java/JavaVirtualMachines/corretto-1.8.0_472/Contents/Home" stamp="1763006985499"/>
+    <entry loc="/Users/sjy/Library/Java/JavaVirtualMachines/ms-21.0.7/Contents/Home" stamp="1747553924748"/>
+    <entry loc="/Library/Java/JavaVirtualMachines/temurin-8.jdk/Contents/Home" stamp="1754007948824"/>
+    <entry loc="/Users/sjy/Library/Java/JavaVirtualMachines/corretto-17.0.17/Contents/Home" stamp="1768360193190"/>
+    <entry loc="/Users/sjy/Library/Java/JavaVirtualMachines/ms-11.0.27/Contents/Home" stamp="1751855472874"/>
+    <entry loc="/Users/sjy/Library/Java/JavaVirtualMachines/ms-17.0.15/Contents/Home" stamp="1753103355864"/>
+    <entry loc="/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home" stamp="1758873327000"/>
+    <entry loc="/Users/sjy/Library/Java/JavaVirtualMachines/corretto-21.0.8/Contents/Home" stamp="1756709671142"/>
+</dirs>
