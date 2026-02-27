@@ -23,18 +23,20 @@ public class HikariDataSourceFactory {
     public static HikariDataSource createWriteDataSource() {
         loadDriver();
 
-        String dbName = env("DB_NAME", "card_db");
+        String dbName = env("APP_DB_NAME", "card_db");
         String dbParams = env("DB_PARAMS",
                 "serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true");
 
         HikariConfig config = new HikariConfig();
         config.setPoolName("write-pool");
+        
         config.setJdbcUrl(buildJdbcUrl(
-                env("DB_SOURCE_HOST", "localhost"),
-                env("DB_SOURCE_PORT", "3306"),
+                env("DB_SOURCE_HOST", "mysql-router"),
+                env("DB_SOURCE_PORT", "6446"),
                 dbName, dbParams));
-        config.setUsername(env("DB_SOURCE_USER", "root"));
-        config.setPassword(env("DB_SOURCE_PASSWORD", "1234"));
+        config.setUsername(env("DB_SOURCE_USER", env("APP_DB_USER", "app")));
+        config.setPassword(env("DB_SOURCE_PASSWORD", env("APP_DB_PASSWORD", "app1234")));
+        
         applyPoolOptions(config, "DB_SOURCE_");
 
         HikariDataSource ds = new HikariDataSource(config);
@@ -49,18 +51,20 @@ public class HikariDataSourceFactory {
     public static HikariDataSource createReadDataSource() {
         loadDriver();
 
-        String dbName = env("DB_NAME", "card_db");
+        String dbName = env("APP_DB_NAME", "card_db");
         String dbParams = env("DB_PARAMS",
                 "serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true");
 
         HikariConfig config = new HikariConfig();
         config.setPoolName("read-pool");
+        
         config.setJdbcUrl(buildJdbcUrl(
-                env("DB_REPLICA_HOST", env("DB_SOURCE_HOST", "localhost")),
-                env("DB_REPLICA_PORT", env("DB_SOURCE_PORT", "3306")),
+                env("DB_REPLICA_HOST", env("DB_SOURCE_HOST", "mysql-router")),
+                env("DB_REPLICA_PORT", env("DB_SOURCE_PORT", "6447")),
                 dbName, dbParams));
-        config.setUsername(env("DB_REPLICA_USER", env("DB_SOURCE_USER", "root")));
-        config.setPassword(env("DB_REPLICA_PASSWORD", env("DB_SOURCE_PASSWORD", "1234")));
+        config.setUsername(env("DB_REPLICA_USER", env("APP_DB_RO_USER", "app_ro")));
+        config.setPassword(env("DB_REPLICA_PASSWORD", env("APP_DB_RO_PASSWORD", "app_ro_pw")));
+        
         applyPoolOptions(config, "DB_REPLICA_");
 
         HikariDataSource ds = new HikariDataSource(config);
