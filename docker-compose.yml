@@ -6,7 +6,7 @@ services:
         image: nginx:1.27-alpine
         container_name: ${COMPOSE_PROJECT_NAME}-nginx
         ports:
-            - "80-81:80"
+            - "80:80"
         depends_on:
             - was1
             - was2
@@ -15,6 +15,23 @@ services:
         networks:
             - app-net
         restart: unless-stopped
+
+    # ─────────────────────────────────────────
+    # Redis (세션 저장소)
+    # ─────────────────────────────────────────
+    redis:
+        image: redis:7-alpine
+        container_name: ${COMPOSE_PROJECT_NAME}-redis
+        ports:
+            - "6379:6379"
+        networks:
+            - app-net
+        restart: unless-stopped
+        healthcheck:
+            test: [ "CMD", "redis-cli", "ping" ]
+            interval: 5s
+            timeout: 3s
+            retries: 10
 
     # ─────────────────────────────────────────
     # WAS 1
@@ -37,8 +54,12 @@ services:
             DB_REPLICA_USER: ${APP_DB_RO_USER}
             DB_REPLICA_PASSWORD: ${APP_DB_RO_PASSWORD}
             DB_PARAMS: serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
         depends_on:
             mysql-router:
+                condition: service_healthy
+            redis:
                 condition: service_healthy
         networks:
             - app-net
@@ -65,8 +86,12 @@ services:
             DB_REPLICA_USER: ${APP_DB_RO_USER}
             DB_REPLICA_PASSWORD: ${APP_DB_RO_PASSWORD}
             DB_PARAMS: serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
         depends_on:
             mysql-router:
+                condition: service_healthy
+            redis:
                 condition: service_healthy
         networks:
             - app-net
@@ -91,7 +116,7 @@ services:
             - app-net
         restart: unless-stopped
         healthcheck:
-            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+            test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}" ]
             interval: 5s
             timeout: 3s
             retries: 20
@@ -112,7 +137,7 @@ services:
             - app-net
         restart: unless-stopped
         healthcheck:
-            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+            test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}" ]
             interval: 5s
             timeout: 3s
             retries: 20
@@ -133,7 +158,7 @@ services:
             - app-net
         restart: unless-stopped
         healthcheck:
-            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+            test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}" ]
             interval: 5s
             timeout: 3s
             retries: 20
@@ -154,7 +179,7 @@ services:
             - app-net
         restart: unless-stopped
         healthcheck:
-            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+            test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}" ]
             interval: 5s
             timeout: 3s
             retries: 20
@@ -169,14 +194,14 @@ services:
             - /bin/bash
             - -c
             - |
-                echo "[mysqlsh] Waiting for mysql1 to be ready..."
-                until mysqlsh root:${MYSQL_ROOT_PASSWORD}@mysql1:3306 -e "print('ok')" 2>/dev/null; do
-                  sleep 5
-                done
-                echo "[mysqlsh] Attempting cluster recovery..."
-                mysqlsh root:${MYSQL_ROOT_PASSWORD}@mysql1:3306 -e "dba.rebootClusterFromCompleteOutage()" 2>/dev/null || true
-                echo "[mysqlsh] Done. Sleeping..."
-                sleep infinity
+              echo "[mysqlsh] Waiting for mysql1 to be ready..."
+              until mysqlsh root:${MYSQL_ROOT_PASSWORD}@mysql1:3306 -e "print('ok')" 2>/dev/null; do
+                sleep 5
+              done
+              echo "[mysqlsh] Attempting cluster recovery..."
+              mysqlsh root:${MYSQL_ROOT_PASSWORD}@mysql1:3306 -e "dba.rebootClusterFromCompleteOutage()" 2>/dev/null || true
+              echo "[mysqlsh] Done. Sleeping..."
+              sleep infinity
         depends_on:
             mysql1:
                 condition: service_healthy
@@ -201,13 +226,13 @@ services:
             - /bin/bash
             - -c
             - |
-                CONF=/router/mysqlrouter.conf
-                if [ ! -f "$$CONF" ]; then
-                  echo "[router] Config not found. Waiting for bootstrap..."
-                  while [ ! -f "$$CONF" ]; do sleep 5; done
-                fi
-                echo "[router] Starting mysqlrouter..."
-                exec mysqlrouter -c "$$CONF"
+              CONF=/router/mysqlrouter.conf
+              if [ ! -f "$$CONF" ]; then
+                echo "[router] Config not found. Waiting for bootstrap..."
+                while [ ! -f "$$CONF" ]; do sleep 5; done
+              fi
+              echo "[router] Starting mysqlrouter..."
+              exec mysqlrouter -c "$$CONF"
         volumes:
             - mysqlrouter_data:/router
         ports:
@@ -226,7 +251,7 @@ services:
             - app-net
         restart: unless-stopped
         healthcheck:
-            test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/6446'"]
+            test: [ "CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/6446'" ]
             interval: 5s
             timeout: 3s
             retries: 20

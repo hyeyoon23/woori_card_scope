@@ -16,3 +16,9 @@
 Thumbs.db
 
 .metadata
+
+# 민감한 정보 및 개인 환경 변수 파일
+.env
+cookies.txt
+docker/mysql/init/schema.sql
+docker/mysql/init/init.sql
