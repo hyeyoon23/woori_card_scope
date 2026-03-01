@@ -678,5 +678,6 @@ docker start woori-card-scope-mysql1
 ## 회고
 
 현재 아키텍처에서 Nginx는 단일 인스턴스로 운영되고 있어 **Presentation Layer가 유일한 단일 장애점(SPOF)**으로 남아 있습니다. <br>
-Nginx 역시 이중화하려면 클라우드 환경에서 컴퓨트를 분리하여 각 서버마다 Nginx를 배치하고, 그 앞단에 L4 로드밸런서(또는 VIP + Keepalived)를 두어야 합니다. <br>
+Nginx 역시 이중화하려면 클라우드 환경에서 컴퓨트를 분리하여 각 서버마다 Nginx를 배치해야합니다. <br> 
+그리고 그 앞단에 L4 로드밸런서(또는 VIP + Keepalived)를 두어야 합니다. <br>
 하지만 시간적 제약으로 인해 클라우드 배포 및 Nginx 이중화까지는 적용하지 못한 점이 아쉬움으로 남으며, 향후 개선 과제로 남겨두었습니다.
