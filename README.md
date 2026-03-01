@@ -215,3 +215,96 @@ SELECT COUNT(*) FROM CARD_TRANSACTION;
 
 - Secondary(mysql2~4)에서 row 수 동일 확인
 - clone 및 replication 정상 여부 검증
+
+---
+
+## **4. Failover Test (Primary 장애 시 자동 승격 테스트)**
+
+InnoDB Cluster의 핵심 기능 중 하나는
+**Primary 장애 발생 시 자동으로 Secondary가 승격되는지 여부**입니다.
+
+아래는 실제 테스트 절차입니다.
+
+---
+
+### **4-1. 현재 Primary 확인**
+
+```sql
+cluster.status()
+```
+
+예시 출력:
+
+```json
+"primary": "mysql1:3306"
+```
+
+→ 현재 Primary가 mysql1임을 확인
+
+---
+
+### **4-2. Primary 강제 중지 (장애 시뮬레이션)**
+
+```bash
+docker stop woori-card-scope-mysql1
+```
+
+- Primary(mysql1)를 강제로 중단
+- 실제 운영 환경에서의 장애 상황을 가정
+
+---
+
+### **4-3. Failover 대기**
+
+```bash
+sleep 15
+```
+
+- Group Replication이 장애를 감지하고
+- 새로운 Primary를 선출할 시간을 확보
+
+(일반적으로 수 초 ~ 10초 내에 자동 선출됨)
+
+---
+
+### **4-4. 새로운 Primary 확인**
+
+```bash
+docker exec -it woori-card-scope-mysqlsh \
+mysqlsh root@mysql2:3306 -- \
+cluster status
+```
+
+예시 출력:
+
+```json
+"primary": "mysql2:3306"
+```
+
+→ mysql2가 새로운 Primary로 승격됨 확인
+
+또는 Router를 통해 확인:
+
+```sql
+SELECT @@hostname;
+```
+
+---
+
+## **4-5. 기존 Primary 복구**
+
+```bash
+docker start woori-card-scope-mysql1
+```
+
+- mysql1 재기동
+- 자동으로 Secondary로 클러스터에 재합류
+
+상태 확인 후 예시 출력
+
+```sql
+"mysql1:3306": {
+  "mode": "R/O",
+  "status": "ONLINE"
+}
+```
