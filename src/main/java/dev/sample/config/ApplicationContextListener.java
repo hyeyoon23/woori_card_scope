@@ -1,4 +1,10 @@
-package dev.sample;
+package dev.sample.config;
+
+import dev.sample.dto.*;
+import dev.sample.dao.*;
+import dev.sample.service.*;
+import dev.sample.config.*;
+import dev.sample.filter.*;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -30,6 +36,9 @@ public class ApplicationContextListener implements ServletContextListener {
 		ctx.setAttribute("DATA_SOURCE", writeDs);
 		ctx.setAttribute("WRITE_DATA_SOURCE", writeDs);
 		ctx.setAttribute("READ_DATA_SOURCE", readDs);
+
+		UserService userService = new UserService(writeDs);
+		ctx.setAttribute("USER_SERVICE", userService);
 
 		log.info("HikariCP pools initialized — write: {}, read: {}", writeDs.getJdbcUrl(), readDs.getJdbcUrl());
 	}

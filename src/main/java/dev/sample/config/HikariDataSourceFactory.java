@@ -1,4 +1,10 @@
-package dev.sample;
+package dev.sample.config;
+
+import dev.sample.dto.*;
+import dev.sample.dao.*;
+import dev.sample.service.*;
+import dev.sample.config.*;
+import dev.sample.filter.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

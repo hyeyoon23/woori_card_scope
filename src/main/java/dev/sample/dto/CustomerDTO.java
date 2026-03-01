@@ -1,4 +1,10 @@
-package dev.sample;
+package dev.sample.dto;
+
+import dev.sample.dto.*;
+import dev.sample.dao.*;
+import dev.sample.service.*;
+import dev.sample.config.*;
+import dev.sample.filter.*;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,4 +40,33 @@ public class CustomerDTO {
 	private BigDecimal plsanitAm;
 	private BigDecimal clothgdsAm;
 	private BigDecimal autoAm;
+
+	// ──── 목록 조회용 DTO ────
+	public record ListAllDTO(
+			String basYh,
+			String seq,
+			String mbrRk,
+			String age,
+			String sexCd,
+			String housSidoNm,
+			BigDecimal totUseAm) {
+	}
+
+	// ──── 상세 조회용 DTO ────
+	public record DetailDTO(
+			String seq,
+			String age,
+			String sexCd,
+			String housSidoNm,
+			String mbrRk,
+			BigDecimal totUseAm,
+			String spendingType,
+			String currentRankName,
+			BigDecimal currentRankAmount,
+			String nextRankName,
+			BigDecimal nextRankAmount,
+			BigDecimal remainingAmount,
+			double progressPercent,
+			double totalProgressPercent) {
+	}
 }
