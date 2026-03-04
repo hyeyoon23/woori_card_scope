@@ -1,22 +1,22 @@
 package dev.sample.service;
 
-import dev.sample.dto.*;
-import dev.sample.dao.*;
-import dev.sample.service.*;
-import dev.sample.config.*;
-import dev.sample.filter.*;
-
 import java.sql.SQLException;
 import java.util.List;
 
 import javax.sql.DataSource;
 
+import org.springframework.stereotype.Service;
+
+import dev.sample.dao.CustomerDAO;
+import dev.sample.dto.CustomerDTO;
+
+@Service
 public class CustomerService {
 
     private final CustomerDAO customerDAO;
 
-    public CustomerService(DataSource readDataSource) {
-        this.customerDAO = new CustomerDAO(readDataSource);
+    public CustomerService(CustomerDAO customerDAO) {
+        this.customerDAO = customerDAO;
     }
 
     // ──── 전체 목록 조회 ────

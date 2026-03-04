@@ -1,11 +1,5 @@
 package dev.sample.servlet;
 
-import dev.sample.dto.*;
-import dev.sample.dao.*;
-import dev.sample.service.*;
-import dev.sample.config.*;
-import dev.sample.filter.*;
-
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
@@ -19,6 +13,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
+
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
+import dev.sample.config.ApplicationContextListener;
+import dev.sample.dto.CustomerDTO;
+import dev.sample.service.CustomerService;
 
 @WebServlet("/customers/detail")
 public class TestCustomerServlet extends HttpServlet {
@@ -42,13 +42,11 @@ public class TestCustomerServlet extends HttpServlet {
 
     @Override
     public void init(ServletConfig config) throws ServletException {
-        super.init(config);
-        ServletContext ctx = config.getServletContext();
-        DataSource readDataSource = ApplicationContextListener.getReadDataSource(ctx);
-        if (readDataSource == null) {
-            throw new ServletException("READ_DATA_SOURCE not found in ServletContext");
-        }
-        customerService = new CustomerService(readDataSource);
+    	AnnotationConfigApplicationContext ctx = (AnnotationConfigApplicationContext) config.getServletContext()
+				.getAttribute("SPRING_CONTEXT");
+
+		customerService = ctx.getBean(CustomerService.class);
+
     }
 
     @Override

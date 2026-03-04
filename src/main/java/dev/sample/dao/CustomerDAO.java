@@ -1,11 +1,5 @@
 package dev.sample.dao;
 
-import dev.sample.dto.*;
-import dev.sample.dao.*;
-import dev.sample.service.*;
-import dev.sample.config.*;
-import dev.sample.filter.*;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Connection;
@@ -19,8 +13,18 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
+
+import dev.sample.dto.CustomerDTO;
+
+@Repository
 public class CustomerDAO {
 	private final DataSource readDataSource;
+
+	public CustomerDAO(@Qualifier("readDataSource") DataSource dataSource) {
+		this.readDataSource = dataSource;
+	}
 
 	// ──── 랭크 코드 → 랭크명 매핑 ────
 	private static final Map<String, String> RANK_NAME_MAP = new LinkedHashMap<>();
@@ -63,17 +67,8 @@ public class CustomerDAO {
 	}
 
 	// ──── 중분류 컬럼명 목록 (10개) ────
-	private static final String[] MID_CATEGORY_COLUMNS = {
-			"INTERIOR_AM", "INSUHOS_AM", "OFFEDU_AM", "TRVLEC_AM", "FSBZ_AM",
-			"SVCARC_AM", "DIST_AM", "PLSANIT_AM", "CLOTHGDS_AM", "AUTO_AM"
-	};
-
-	public CustomerDAO(DataSource readDataSource) {
-		if (readDataSource == null) {
-			throw new IllegalArgumentException("readDataSource must not be null");
-		}
-		this.readDataSource = readDataSource;
-	}
+	private static final String[] MID_CATEGORY_COLUMNS = { "INTERIOR_AM", "INSUHOS_AM", "OFFEDU_AM", "TRVLEC_AM",
+			"FSBZ_AM", "SVCARC_AM", "DIST_AM", "PLSANIT_AM", "CLOTHGDS_AM", "AUTO_AM" };
 
 	// ════════════════════════════════════════════════════════════════
 	// 1. findAll – 전체 목록 (SEQ별 TOT_USE_AM 합산 + Deferred Join 페이징)
@@ -85,31 +80,21 @@ public class CustomerDAO {
 
 		String sql = "SELECT SUBSTR(c.BAS_YH, 1, 4) AS BAS_YH, c.SEQ, "
 				+ "MAX(c.MBR_RK) AS MBR_RK, MAX(c.AGE) AS AGE, MAX(c.SEX_CD) AS SEX_CD, "
-				+ "MAX(c.HOUS_SIDO_NM) AS HOUS_SIDO_NM, SUM(c.TOT_USE_AM) AS TOT_USE_AM "
-				+ "FROM CARD_TRANSACTION c "
-				+ "JOIN ("
-				+ "  SELECT DISTINCT SEQ FROM CARD_TRANSACTION "
-				+ "  ORDER BY SEQ LIMIT ? OFFSET ?"
-				+ ") tmp ON c.SEQ = tmp.SEQ "
-				+ "GROUP BY SUBSTR(c.BAS_YH, 1, 4), c.SEQ "
+				+ "MAX(c.HOUS_SIDO_NM) AS HOUS_SIDO_NM, SUM(c.TOT_USE_AM) AS TOT_USE_AM " + "FROM CARD_TRANSACTION c "
+				+ "JOIN (" + "  SELECT DISTINCT SEQ FROM CARD_TRANSACTION " + "  ORDER BY SEQ LIMIT ? OFFSET ?"
+				+ ") tmp ON c.SEQ = tmp.SEQ " + "GROUP BY SUBSTR(c.BAS_YH, 1, 4), c.SEQ "
 				+ "ORDER BY c.SEQ, SUBSTR(c.BAS_YH, 1, 4)";
 
-		try (Connection conn = readDataSource.getConnection();
-				PreparedStatement pstmt = conn.prepareStatement(sql)) {
+		try (Connection conn = readDataSource.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
 			pstmt.setInt(1, pageSize);
 			pstmt.setInt(2, offset);
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				while (rs.next()) {
-					CustomerDTO.ListAllDTO dto = new CustomerDTO.ListAllDTO(
-							rs.getString("BAS_YH"),
-							rs.getString("SEQ"),
-							rs.getString("MBR_RK"),
-							rs.getString("AGE"),
-							rs.getString("SEX_CD"),
-							rs.getString("HOUS_SIDO_NM"),
-							rs.getBigDecimal("TOT_USE_AM"));
+					CustomerDTO.ListAllDTO dto = new CustomerDTO.ListAllDTO(rs.getString("BAS_YH"), rs.getString("SEQ"),
+							rs.getString("MBR_RK"), rs.getString("AGE"), rs.getString("SEX_CD"),
+							rs.getString("HOUS_SIDO_NM"), rs.getBigDecimal("TOT_USE_AM"));
 					list.add(dto);
 				}
 			}
@@ -120,14 +105,13 @@ public class CustomerDAO {
 	// ════════════════════════════════════════════════════════════════
 	// 2. findByFilter – 필터 조건 목록 (동적 쿼리 + Deferred Join 페이징)
 	// ════════════════════════════════════════════════════════════════
-	public List<CustomerDTO.ListAllDTO> findByFilter(String mbrRk, String age, String sexCd,
-			String housSidoNm, String seq, int page, int pageSize) throws SQLException {
+	public List<CustomerDTO.ListAllDTO> findByFilter(String mbrRk, String age, String sexCd, String housSidoNm,
+			String seq, int page, int pageSize) throws SQLException {
 		List<CustomerDTO.ListAllDTO> list = new ArrayList<>();
 		int offset = (page - 1) * pageSize;
 		List<Object> innerParams = new ArrayList<>();
 
-		StringBuilder innerSql = new StringBuilder(
-				"SELECT DISTINCT SEQ FROM CARD_TRANSACTION WHERE 1=1");
+		StringBuilder innerSql = new StringBuilder("SELECT DISTINCT SEQ FROM CARD_TRANSACTION WHERE 1=1");
 
 		appendFilter(innerSql, innerParams, "MBR_RK", mbrRk);
 		appendFilter(innerSql, innerParams, "AGE", age);
@@ -148,19 +132,15 @@ public class CustomerDAO {
 
 		String sql = "SELECT SUBSTR(c.BAS_YH, 1, 4) AS BAS_YH, c.SEQ, "
 				+ "MAX(c.MBR_RK) AS MBR_RK, MAX(c.AGE) AS AGE, MAX(c.SEX_CD) AS SEX_CD, "
-				+ "MAX(c.HOUS_SIDO_NM) AS HOUS_SIDO_NM, SUM(c.TOT_USE_AM) AS TOT_USE_AM "
-				+ "FROM CARD_TRANSACTION c "
-				+ "JOIN (" + innerSql.toString() + ") tmp ON c.SEQ = tmp.SEQ "
-				+ "WHERE 1=1" + outerWhere.toString()
-				+ " GROUP BY SUBSTR(c.BAS_YH, 1, 4), c.SEQ "
-				+ "ORDER BY c.SEQ, SUBSTR(c.BAS_YH, 1, 4)";
+				+ "MAX(c.HOUS_SIDO_NM) AS HOUS_SIDO_NM, SUM(c.TOT_USE_AM) AS TOT_USE_AM " + "FROM CARD_TRANSACTION c "
+				+ "JOIN (" + innerSql.toString() + ") tmp ON c.SEQ = tmp.SEQ " + "WHERE 1=1" + outerWhere.toString()
+				+ " GROUP BY SUBSTR(c.BAS_YH, 1, 4), c.SEQ " + "ORDER BY c.SEQ, SUBSTR(c.BAS_YH, 1, 4)";
 
 		List<Object> allParams = new ArrayList<>();
 		allParams.addAll(innerParams);
 		allParams.addAll(outerParams);
 
-		try (Connection conn = readDataSource.getConnection();
-				PreparedStatement pstmt = conn.prepareStatement(sql)) {
+		try (Connection conn = readDataSource.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
 			for (int i = 0; i < allParams.size(); i++) {
 				pstmt.setObject(i + 1, allParams.get(i));
@@ -168,14 +148,9 @@ public class CustomerDAO {
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				while (rs.next()) {
-					CustomerDTO.ListAllDTO dto = new CustomerDTO.ListAllDTO(
-							rs.getString("BAS_YH"),
-							rs.getString("SEQ"),
-							rs.getString("MBR_RK"),
-							rs.getString("AGE"),
-							rs.getString("SEX_CD"),
-							rs.getString("HOUS_SIDO_NM"),
-							rs.getBigDecimal("TOT_USE_AM"));
+					CustomerDTO.ListAllDTO dto = new CustomerDTO.ListAllDTO(rs.getString("BAS_YH"), rs.getString("SEQ"),
+							rs.getString("MBR_RK"), rs.getString("AGE"), rs.getString("SEX_CD"),
+							rs.getString("HOUS_SIDO_NM"), rs.getBigDecimal("TOT_USE_AM"));
 					list.add(dto);
 				}
 			}
@@ -186,12 +161,11 @@ public class CustomerDAO {
 	// ════════════════════════════════════════════════════════════════
 	// 3. getTotalCount – 전체 건수 (페이징 계산용)
 	// ════════════════════════════════════════════════════════════════
-	public int getTotalCount(String mbrRk, String age, String sexCd,
-			String housSidoNm, String seq) throws SQLException {
+	public int getTotalCount(String mbrRk, String age, String sexCd, String housSidoNm, String seq)
+			throws SQLException {
 		List<Object> params = new ArrayList<>();
 
-		StringBuilder sql = new StringBuilder(
-				"SELECT COUNT(DISTINCT SEQ) AS cnt FROM CARD_TRANSACTION WHERE 1=1");
+		StringBuilder sql = new StringBuilder("SELECT COUNT(DISTINCT SEQ) AS cnt FROM CARD_TRANSACTION WHERE 1=1");
 
 		appendFilter(sql, params, "MBR_RK", mbrRk);
 		appendFilter(sql, params, "AGE", age);
@@ -230,8 +204,7 @@ public class CustomerDAO {
 		sumSql.append(" FROM CARD_TRANSACTION WHERE SEQ = ? GROUP BY SEQ");
 
 		// 2) 최신 분기 속성 쿼리
-		String attrSql = "SELECT AGE, SEX_CD, HOUS_SIDO_NM, MBR_RK "
-				+ "FROM CARD_TRANSACTION WHERE SEQ = ? "
+		String attrSql = "SELECT AGE, SEX_CD, HOUS_SIDO_NM, MBR_RK " + "FROM CARD_TRANSACTION WHERE SEQ = ? "
 				+ "ORDER BY BAS_YH DESC LIMIT 1";
 
 		try (Connection conn = readDataSource.getConnection();
@@ -283,10 +256,8 @@ public class CustomerDAO {
 						remainingAmount = BigDecimal.ZERO;
 					}
 
-					progressPercent = totUseAm
-							.multiply(new BigDecimal("100"))
-							.divide(nextRankAmount, 2, RoundingMode.HALF_UP)
-							.doubleValue();
+					progressPercent = totUseAm.multiply(new BigDecimal("100"))
+							.divide(nextRankAmount, 2, RoundingMode.HALF_UP).doubleValue();
 					if (progressPercent > 100.0) {
 						progressPercent = 100.0;
 					}
@@ -316,20 +287,8 @@ public class CustomerDAO {
 				}
 			}
 
-			return new CustomerDTO.DetailDTO(
-					seq,
-					age,
-					sexCd,
-					housSidoNm,
-					mbrRk,
-					totUseAm,
-					spendingType,
-					currentRankName,
-					currentRankAmount,
-					nextRankName,
-					nextRankAmount,
-					remainingAmount,
-					progressPercent,
+			return new CustomerDTO.DetailDTO(seq, age, sexCd, housSidoNm, mbrRk, totUseAm, spendingType,
+					currentRankName, currentRankAmount, nextRankName, nextRankAmount, remainingAmount, progressPercent,
 					totalProgressPercent);
 		}
 	}
@@ -337,8 +296,7 @@ public class CustomerDAO {
 	// ──── 내부 헬퍼 ────
 
 	/** 동적 쿼리 필터 조건 추가 */
-	private void appendFilter(StringBuilder sql, List<Object> params,
-			String column, String value) {
+	private void appendFilter(StringBuilder sql, List<Object> params, String column, String value) {
 		if (value != null && !value.isEmpty()) {
 			sql.append(" AND ").append(column).append(" = ?");
 			params.add(value);
