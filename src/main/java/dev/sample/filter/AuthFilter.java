@@ -1,10 +1,5 @@
 package dev.sample.filter;
 
-import dev.sample.dto.*;
-import dev.sample.dao.*;
-import dev.sample.service.*;
-import dev.sample.config.*;
-import dev.sample.filter.*;
 
 import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;

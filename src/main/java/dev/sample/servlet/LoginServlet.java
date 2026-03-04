@@ -1,15 +1,19 @@
 package dev.sample.servlet;
 
-import dev.sample.dto.*;
-import dev.sample.dao.*;
-import dev.sample.service.*;
-import dev.sample.config.*;
-import dev.sample.filter.*;
+import java.io.IOException;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.*;
-import java.io.IOException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
+import dev.sample.dto.UserDTO;
+import dev.sample.service.UserService;
 
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
@@ -17,12 +21,12 @@ public class LoginServlet extends HttpServlet {
     private UserService userService;
 
     @Override
-    public void init() throws ServletException {
-        super.init();
-        userService = (UserService) getServletContext().getAttribute("USER_SERVICE");
-        if (userService == null) {
-            throw new ServletException("USER_SERVICE not found in ServletContext");
-        }
+    public void init(ServletConfig config) throws ServletException {
+    	AnnotationConfigApplicationContext ctx = 
+    			(AnnotationConfigApplicationContext) config.getServletContext()
+    			.getAttribute("SPRING_CONTEXT");
+    	
+    	userService = ctx.getBean(UserService.class);
     }
 
     @Override

@@ -1,20 +1,19 @@
 package dev.sample.service;
 
-import dev.sample.dto.*;
-import dev.sample.dao.*;
-import dev.sample.service.*;
-import dev.sample.config.*;
-import dev.sample.filter.*;
-
-import javax.sql.DataSource;
 import java.sql.SQLException;
 
+import org.springframework.stereotype.Service;
+
+import dev.sample.dao.UserDAO;
+import dev.sample.dto.UserDTO;
+
+@Service
 public class UserService {
 
     private final UserDAO userDAO;
 
-    public UserService(DataSource dataSource) {
-        this.userDAO = new UserDAO(dataSource);
+    public UserService(UserDAO userDAO) {
+        this.userDAO = userDAO;
     }
 
     /**
